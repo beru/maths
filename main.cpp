@@ -7,8 +7,7 @@
 #include <math.h>
 
 #define PI M_PI
-#define DEG2RAD (M_PI / 180.0)
-#define DEG2RAD (M_PI / 180.0)
+#define DEG2RAD (PI / 180.0)
 
 // http://forum.devmaster.net/t/fast-and-accurate-sine-cosine/9648/
 float sine(float x)
@@ -224,30 +223,6 @@ int getSignBit(IntegerT v)
 	return v >> (sizeof(IntegerT) * CHAR_BIT - 1);
 }
 
-// Degree単位の角度値の正規化
-// 入力：度数法の値、固定小数点形式（Q.InputFixedPointQ）
-// 出力：正規化された角度、固定小数点形式（Q.InputFixedPointQ）
-// input : fixed point degree angle. ex 180deg == (180 << InputFracBitsCount)
-// output : fixed point normalized angle. from -1.0(-2rad,-360deg) to +1.0(+2rad,+360deg)
-template <size_t InputFixedPointQ, size_t OutputFixedPointQ>
-static inline
-int32_t normalizeDegreeAngleBy2PI(int32_t degreeFixedPoint)
-{
-	static const int invPI2_FixedPointQ = 39;
-	static const int invPI2 = ((1ULL << invPI2_FixedPointQ) + 180) / 360;
-	// multiply input value with invPI2 and right shift to achieve input / PI2
-	int32_t result = ((int64_t)degreeFixedPoint * invPI2) >> ((InputFixedPointQ + invPI2_FixedPointQ) - OutputFixedPointQ);
-
-	int sign = getSignBit(result);
-	// minus 1 in case input is negative value
-//	result -= sign; 
-	// extract fractional bits only
-	static const int outputFracBitsMask = (1 << OutputFixedPointQ) - 1;
-	// negate result sign to revive signedness
-	result = negate(result & outputFracBitsMask, sign);
-	return result;
-}
-
 // input : fixed point radian angle. 1rad == 180deg == (PI << InputFracBitsCount) == (3.14.... << InputFracBitsCount)
 // output : fixed point normalized angle. from -1.0(-2rad,-360deg) to +1.0(+2rad,+360deg)
 template <size_t InputFixedPointQ, size_t OutputFixedPointQ>
@@ -270,28 +245,48 @@ IntegerT minval(IntegerT x, IntegerT y)
 	return y ^ ((x ^ y) & -(x < y));
 }
 
+// Degree単位の角度値の正規化
+// 入力：度数法の値、固定小数点形式（Q.InputFixedPointQ）
+// 出力：正規化された角度、固定小数点形式（Q.InputFixedPointQ）
+// input : fixed point degree angle. ex 180deg == (180 << InputFracBitsCount)
+// output : fixed point normalized angle. from -1.0(-2rad,-360deg) to +1.0(+2rad,+360deg)
+template <size_t InputFixedPointQ, size_t OutputFixedPointQ>
+static inline
+int32_t normalizeDegreeAngleBy2PI(int32_t degreeFixedPoint)
+{
+	static const int invPI2_FixedPointQ = 39;
+	static const int invPI2 = ((1ULL << invPI2_FixedPointQ) + 180) / 360;
+	// multiply input value with invPI2 and right shift to achieve input / PI2
+	int32_t result = ((int64_t)degreeFixedPoint * invPI2) >> ((InputFixedPointQ + invPI2_FixedPointQ) - OutputFixedPointQ);
+
+	// extract fractional bits only
+	static const int outputFracBitsMask = (1 << OutputFixedPointQ) - 1;
+	return result & outputFracBitsMask;
+}
+
 // 三角関数 sine の近似関数
 // 浮動小数点演算器を持たないプロセッサ用の固定小数点演算
-// 入力：360deg = 1.0 で正規化された角度、固定小数点形式（Q.InputFixedPointQ）
+// 入力：度数法の角度、固定小数点形式（Q.InputFixedPointQ）
 // 出力：sine の結果、固定小数点形式 Q.31
-// input : fixed point normalized angle. from -1.0(-2PI) to +1.0(+2PI)
+// input : fixed point decimal angle.
 // output : fixed point sine value. from -1.0 to 1.0
 template <
-	size_t InputFixedPointQ	// 入力の固定小数点数の小数部ビット数
+	size_t InputFixedPointQ,	// 入力の固定小数点数の小数部ビット数
+	size_t WorkFixedPointQ = 24	// 処理変数の固定小数点数の小数部ビット数
 >
 static inline
-int32_t approxSineByNormalizedBy2PIFixedPoint(int32_t x)
+int32_t approxSineByDecimalFixedPoint(int32_t x)
 {
 	// 角度が負の値の場合、処理結果が負になる。（絶対値は同じ）
 	// 角度を絶対値にして処理する。
 	// 処理結果の値の符号を反転して上下反転する。
 	bool bNegate = getSignBit(x);
-	uint32_t ux = getAbsolute(x);
+	uint32_t ux = normalizeDegreeAngleBy2PI<InputFixedPointQ, WorkFixedPointQ>(getAbsolute(x));
 
 	// 絶対値が 0.5(+π)以上の場合は入力角度を折り返し、処理結果の符号を反転させる
-	bool isGreaterThanOrEqHalf = ux >> (InputFixedPointQ - 1);
+	bool isGreaterThanOrEqHalf = ux >> (WorkFixedPointQ - 1);
 	bNegate ^= isGreaterThanOrEqHalf;
-	static const uint32_t halfBitMask = 1 << (InputFixedPointQ - 1);
+	static const uint32_t halfBitMask = 1 << (WorkFixedPointQ - 1);
 	static const uint32_t halfFracBitsMask = halfBitMask - 1;
 	ux &= halfFracBitsMask;
 
@@ -310,7 +305,7 @@ int32_t approxSineByNormalizedBy2PIFixedPoint(int32_t x)
 	// 0.25 = rad/2 = 90deg = (1 << (InputFixedPointQ - 2))
 
 	int64_t x2 = (uint64_t)ux * ux;	// Q.(InputFixedPointQ + InputFixedPointQ - 4)
-	x2 >>= (InputFixedPointQ + InputFixedPointQ - 4) - 31;	// Q.35
+	x2 >>= (WorkFixedPointQ + WorkFixedPointQ - 4) - 31;	// Q.35
 	// 近似計算
 
 	// double y = x * (c0 + x2 * (c1 + x2 * (c2 + x2 * (c3 + x2 * c4))));
@@ -327,7 +322,7 @@ int32_t approxSineByNormalizedBy2PIFixedPoint(int32_t x)
 	tmp = c2 + ((x2 * tmp) >> 35);	// Q.34 + ((Q.35 * Q.38) >> 39) = Q.34
 	tmp = c1 + ((x2 * tmp) >> 34);	// Q.31 + ((Q.35 * Q.34) >> 38) = Q.31
 	tmp = c0 + ((x2 * tmp) >> 31);	// Q.31 + ((Q.35 * Q.31) >> 35) = Q.31
-	tmp = (ux * tmp) >> (InputFixedPointQ - 2);	// Q.InputFixedPointQ * Q.31
+	tmp = (ux * tmp) >> (WorkFixedPointQ - 2);	// Q.InputFixedPointQ * Q.31
 		// シフト数の - 2 は、2pi = 320deg = 1.0 に正規化された入力の値を、90deg = 1.0 の値として扱う為
 	int result = minval(tmp, (int64_t)INT32_MAX);
 
@@ -337,16 +332,15 @@ int32_t approxSineByNormalizedBy2PIFixedPoint(int32_t x)
 
 void testSine()
 {
-	printf("angle\tsin\tline\tdiff\n");
-	double start = 360+45;
+	printf("degree\n");
+	double start = 0;
 	for (double i=start - 360; i<start + 360.0; i+=1) {
 		double radAngle = DEG2RAD * i;
 		double resultA = sin(radAngle);
 		double resultB = approxSineByRadian(radAngle);
 		double resultC = approxSineByAngle(i);
 		double resultD = approxSineByNormalized(i / 90);
-		int32_t normalizedAngle = normalizeDegreeAngleBy2PI<16, 24>(i * (1 << 16));
-		int32_t iResultE = approxSineByNormalizedBy2PIFixedPoint<24>(normalizedAngle);
+		int32_t iResultE = approxSineByDecimalFixedPoint<16>(i * (1 << 16));
 		double resultE = iResultE / (double)(1LL << 31);
 		printf("%f %f %f %f %f %f %e %e %e %e\n",
 			i,
