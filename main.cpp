@@ -65,7 +65,7 @@ double approxSineByRadian(double x)
 	return bMinus ? -y : y;
 }
 
-double approxSineByAngle(double x)
+double approxSineByDegree(double x)
 {
 	bool bMinus = false;
 	if (x < 0) {
@@ -275,7 +275,7 @@ template <
 	size_t WorkFixedPointQ = 24	// 処理変数の固定小数点数の小数部ビット数
 >
 static inline
-int32_t approxSineByDecimalFixedPoint(int32_t x)
+int32_t approxSineByDegreeFixedPoint(int32_t x)
 {
 	// 角度が負の値の場合、処理結果が負になる。（絶対値は同じ）
 	// 角度を絶対値にして処理する。
@@ -338,9 +338,9 @@ void testSine()
 		double radAngle = DEG2RAD * i;
 		double resultA = sin(radAngle);
 		double resultB = approxSineByRadian(radAngle);
-		double resultC = approxSineByAngle(i);
+		double resultC = approxSineByDegree(i);
 		double resultD = approxSineByNormalized(i / 90);
-		int32_t iResultE = approxSineByDecimalFixedPoint<16>(i * (1 << 16));
+		int32_t iResultE = approxSineByDegreeFixedPoint<16>(i * (1 << 16));
 		double resultE = iResultE / (double)(1LL << 31);
 		printf("%f %f %f %f %f %f %e %e %e %e\n",
 			i,
