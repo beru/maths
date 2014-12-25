@@ -340,8 +340,9 @@ void testSine()
 		double resultB = approxSineByRadian(radAngle);
 		double resultC = approxSineByDegree(i);
 		double resultD = approxSineByNormalized(i / 90);
-		int32_t iResultE = approxSineByDegreeFixedPoint<16>(i * (1 << 16));
-		double resultE = iResultE / (double)(1LL << 31);
+//		int32_t iResultE = approxSineByDegreeFixedPoint<16>(i * (1 << 16));
+		int32_t iResultE = ne3d_sintp_02pi(radAngle * (1 << 16));
+		double resultE = iResultE / (double)(1LL << 16);
 		printf("%f %f %f %f %f %f %e %e %e %e\n",
 			i,
 			resultA,
