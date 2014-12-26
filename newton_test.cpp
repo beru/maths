@@ -19,15 +19,18 @@ static uint32_t g_reciproTable[256];
 
 uint32_t newton_recipro_FixedPoint(uint32_t a, size_t* q)
 {
-	static const size_t nIte = 2;
+	static const size_t nIte = 1;
 	size_t nlz = __lzcnt((int)a);
 	size_t nBits = 32 - nlz;
-	size_t adjust = 1 - ((a - (1 << (nBits - 1))) >> (nBits - 2));
 	uint32_t x;
 	if (nBits > 15) {
 		size_t offsetBits = nBits - 15;
-		uint32_t initial = 1u << (30 + adjust);
-		x = initial;
+		uint32_t initial = 1u << 30;
+		uint32_t idx = a >> (nBits - 8);
+		uint32_t initial2 = g_reciproTable[idx];
+		size_t nlz2 = __lzcnt(initial);
+		initial2 <<= __lzcnt(initial2) - 1;
+		x = initial2;
 		for (size_t i=0; i<nIte; ++i) {
 			uint32_t xmulx = ((uint64_t)x * x) >> (30 + offsetBits);
 			uint64_t right = (uint64_t)a * xmulx;
@@ -36,7 +39,7 @@ uint32_t newton_recipro_FixedPoint(uint32_t a, size_t* q)
 		}
 		*q = 45 + offsetBits;
 	}else {
-		uint32_t initial = 1u << ((nBits << 1) + adjust);
+		uint32_t initial = 1u << (nBits << 1);
 		x = initial;
 		for (size_t i=0; i<nIte; ++i) {
 			uint32_t xmulx = (((uint64_t)x * x) >> (nBits*2)) - 1;
@@ -55,7 +58,7 @@ int main(int argc, char* argv[])
 		g_reciproTable[i-1] = (1LL << 32) / i - 1;
 	}
 
-	size_t start = (1 << 20) + (1 << 19) - 1;
+	size_t start = 1 << 15;
 	size_t end = start << 3;
 	for (size_t i=start; i<end; i+=(end-start)/64) {
 //		double recipro = newton_recipro(i);
