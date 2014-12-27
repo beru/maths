@@ -25,19 +25,16 @@ uint32_t newton_recipro_FixedPoint(uint32_t a, size_t* q)
 	uint32_t x;
 	if (nBits > 15) {
 		size_t offsetBits = nBits - 15;
-		uint32_t initial = 1u << 30;
 		uint32_t idx = a >> (nBits - 8);
 		uint32_t initial2 = g_reciproTable[idx];
-		size_t nlz2 = __lzcnt(initial);
-		initial2 <<= __lzcnt(initial2) - 1;
 		x = initial2;
 		for (size_t i=0; i<nIte; ++i) {
-			uint32_t xmulx = ((uint64_t)x * x) >> (30 + offsetBits);
+			uint32_t xmulx = ((uint64_t)x * x) >> (31 + offsetBits);
 			uint64_t right = (uint64_t)a * xmulx;
 			uint64_t xmul2 = (uint64_t)x << 16;
 			x = (xmul2 - right) >> 15;
 		}
-		*q = 45 + offsetBits;
+		*q = 46 + offsetBits;
 	}else {
 		uint32_t initial = 1u << (nBits << 1);
 		x = initial;
@@ -55,21 +52,25 @@ uint32_t newton_recipro_FixedPoint(uint32_t a, size_t* q)
 int main(int argc, char* argv[])
 {
 	for (size_t i=1; i<=256; ++i) {
-		g_reciproTable[i-1] = (1LL << 32) / i - 1;
+		uint64_t tmp = (1ULL << 62) / i;
+		size_t lnz = __lzcnt64(tmp);
+		tmp >>= 32 - lnz;
+		g_reciproTable[i-1] = tmp;
 	}
 
-	size_t start = 1 << 15;
-	size_t end = start << 3;
-	for (size_t i=start; i<end; i+=(end-start)/64) {
+	size_t start = (1 << 1);
+	size_t end = start + (1 << 16);
+	size_t step = (end-start) / 256;
+	for (size_t i=start; i<end; i+=step) {
 //		double recipro = newton_recipro(i);
 //		printf("%d %.9f\n", i, recipro);
 		size_t q;
 		uint32_t recipro2 = newton_recipro_FixedPoint(i, &q);
 		double recipro2f = recipro2 / (double)(1LL << q);
 		double recipro = 1/(double)i;
-		uint32_t recipro1 = recipro * (1LL << q);
-		int64_t diff = (int64_t)recipro2 - (int64_t)recipro1;
-		printf("%u %u %u %lld %f\n", i, recipro1, recipro2, diff, (diff*100.0)/recipro1);
+		uint64_t recipro1 = recipro * (1LL << q);
+		int64_t diff = (int64_t)recipro1 - (int64_t)recipro2;
+		printf("%u %llu %u %lld %f\n", i, recipro1, recipro2, diff, (diff*100.0)/recipro1);
 	}
 
 	return 0;
