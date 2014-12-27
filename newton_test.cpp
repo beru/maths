@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
 		g_reciproTable[i-1] = tmp;
 	}
 
-	size_t start = (1 << 1);
+	size_t start = (1 << 24);
 	size_t end = start + (1 << 16);
 	size_t step = (end-start) / 256;
 	for (size_t i=start; i<end; i+=step) {
