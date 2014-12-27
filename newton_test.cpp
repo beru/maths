@@ -19,29 +19,30 @@ static uint32_t g_reciproTable[256];
 
 uint32_t newton_recipro_FixedPoint(uint32_t a, size_t* q)
 {
-	if (a <= 256) {
+	if (a > 256) {
+		size_t nBits = 32 - __lzcnt(a);
+		uint32_t idx = a >> (nBits - 8);
+		uint32_t initial = g_reciproTable[idx];
+		uint32_t x = initial;
+		int32_t intOffsetBits = (int)nBits - 15;
+		*q = 46 + intOffsetBits;
+		size_t absOffsetBits = abs(intOffsetBits);
+		a <<= (absOffsetBits << 1) * (nBits < 16);
+		static const size_t nIte = 2;
+		for (size_t i=0; i<nIte; ++i) {
+			uint32_t xmulx = ((uint64_t)x * x) >> 32;
+			uint64_t right = (uint64_t)a * xmulx;
+			uint64_t xmul2 = ((uint64_t)x << (15 + absOffsetBits)) - 1;
+			x = (xmul2 - right) >> (14 + absOffsetBits);
+		}
+		return x;
+	}else {
 		if (a == 0) {
 			return 0;
 		}
 		*q = 63 - __lzcnt(a - 1);
 		return g_reciproTable[a - 1];
 	}
-	size_t nBits = 32 - __lzcnt(a);
-	uint32_t idx = a >> (nBits - 8);
-	uint32_t initial = g_reciproTable[idx];
-	uint32_t x = initial;
-	int32_t intOffsetBits = (int)nBits - 15;
-	*q = 46 + intOffsetBits;
-	size_t absOffsetBits = abs(intOffsetBits);
-	a <<= (absOffsetBits << 1) * ((nBits-1) >> 4);
-	static const size_t nIte = 2;
-	for (size_t i=0; i<nIte; ++i) {
-		uint32_t xmulx = ((uint64_t)x * x) >> 32;
-		uint64_t right = (uint64_t)a * xmulx;
-		uint64_t xmul2 = ((uint64_t)x << (15 + absOffsetBits)) - 1;
-		x = (xmul2 - right) >> (14 + absOffsetBits);
-	}
-	return x;
 }
 
 int main(int argc, char* argv[])
@@ -53,8 +54,8 @@ int main(int argc, char* argv[])
 		g_reciproTable[i-1] = tmp;
 	}
 
-	size_t start = 1 << 14;
-	size_t end = start + (1 << 5);
+	size_t start = 1U << 13;
+	size_t end = start + (1 << 4);
 	size_t step = 1;
 	for (size_t i=start; i<end; i+=step) {
 //		double recipro = newton_recipro(i);
@@ -63,7 +64,7 @@ int main(int argc, char* argv[])
 		uint32_t recipro2 = newton_recipro_FixedPoint(i, &q);
 		double recipro2f = recipro2 / (double)(1LL << q);
 		double recipro = (i == 0) ? 0 : (1/(double)i);
-		uint64_t recipro1 = recipro * (1LL << q);
+		uint64_t recipro1 = recipro * (1LLU << q);
 		int64_t diff = (int64_t)recipro1 - (int64_t)recipro2;
 		printf("%u %llu %u %lld %f\n", i, recipro1, recipro2, diff, (diff*100.0)/recipro1);
 	}
