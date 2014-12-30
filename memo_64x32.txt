@@ -1,0 +1,63 @@
+
+b2 * b1
+
+2b * 2b
+
+4b * 2b = 6b
+
+64b * 32b = 96b
+
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+
+0
+1
+2
+3
+
+
+0 ～ 9
+
+0 ～ 45
+
+------------
+
+0b1010 * 0b10 = 10 * 2 = 20
+(0b1000 * 0b10) + (0b0010 * 0b10)
+
+0b1111 * 0b11 = 0b1100 * 0b11 + 0b0011 * 0b11 = 12 * 3 + 3 * 3 = 45
+36 + 9 = 0b100100 + 0b1001 = 0b101101
+
+
+(high * low) << SHIFT + (low * low)
+
+// http://forum.osdev.org/viewtopic.php?f=13&t=26848
+
+ result = (v1.high * v2.high) << 64 + (v1.high * v2.low) << 32 + (v1.low * v2.high) << 32 + v1.low * v2.low
+ 
+    sign = (v1.high ^ v2.high) >> 31;  // Determine sign of result
+    result = abs(v1) * abs(v2);        // Unsigned multiplication
+    if(sign != 0) {     
+        result = -result;              // Negate result if result should've been negative
+    }
+    
+    To negate a number (for both "abs()" and the "result = -result") you won't be able to use the 'neg' instruction
+    (it will only work on 32 bits of 64-bit or 128-bit value being negated). 
+    Instead; either subtract the value from zero (using 'sub' and 'sbb' instructions), 
+    or invert the bits (using 'not') and add one (using 'add' and 'adc').
+    
+    
