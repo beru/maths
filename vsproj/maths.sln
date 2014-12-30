@@ -5,7 +5,9 @@ VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sine_test", "sine_test.vcxproj", "{6AA1D33C-28E3-49CC-A82E-F93D8018F659}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "newton_test", "newton_test.vcxproj", "{FDFA8EAC-A6FF-4122-B854-F116F89B166F}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sqrt_test", "sqrt_test.vcxproj", "{543D76ED-9EE6-448B-A24E-FB6CAE5D31D5}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "reciprocal_test", "reciprocal_test.vcxproj", "{FDFA8EAC-A6FF-4122-B854-F116F89B166F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,6 +25,14 @@ Global
 		{6AA1D33C-28E3-49CC-A82E-F93D8018F659}.Release|Win32.Build.0 = Release|Win32
 		{6AA1D33C-28E3-49CC-A82E-F93D8018F659}.Release|x64.ActiveCfg = Release|x64
 		{6AA1D33C-28E3-49CC-A82E-F93D8018F659}.Release|x64.Build.0 = Release|x64
+		{543D76ED-9EE6-448B-A24E-FB6CAE5D31D5}.Debug|Win32.ActiveCfg = Debug|Win32
+		{543D76ED-9EE6-448B-A24E-FB6CAE5D31D5}.Debug|Win32.Build.0 = Debug|Win32
+		{543D76ED-9EE6-448B-A24E-FB6CAE5D31D5}.Debug|x64.ActiveCfg = Debug|x64
+		{543D76ED-9EE6-448B-A24E-FB6CAE5D31D5}.Debug|x64.Build.0 = Debug|x64
+		{543D76ED-9EE6-448B-A24E-FB6CAE5D31D5}.Release|Win32.ActiveCfg = Release|Win32
+		{543D76ED-9EE6-448B-A24E-FB6CAE5D31D5}.Release|Win32.Build.0 = Release|Win32
+		{543D76ED-9EE6-448B-A24E-FB6CAE5D31D5}.Release|x64.ActiveCfg = Release|x64
+		{543D76ED-9EE6-448B-A24E-FB6CAE5D31D5}.Release|x64.Build.0 = Release|x64
 		{FDFA8EAC-A6FF-4122-B854-F116F89B166F}.Debug|Win32.ActiveCfg = Debug|Win32
 		{FDFA8EAC-A6FF-4122-B854-F116F89B166F}.Debug|Win32.Build.0 = Debug|Win32
 		{FDFA8EAC-A6FF-4122-B854-F116F89B166F}.Debug|x64.ActiveCfg = Debug|x64

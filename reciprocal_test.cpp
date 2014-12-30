@@ -1,4 +1,6 @@
 
+// Newton–@‚Å‹t”‚ğ‹‚ß‚éƒvƒƒOƒ‰ƒ€
+
 #include <stdio.h>
 #include <stdint.h>
 #include <intrin.h>
@@ -14,6 +16,7 @@ double newton_recipro(double a)
 	}
 	return x;
 }
+
 static uint32_t g_zero = 0;
 static uint32_t g_reciproTable[256];
 

@@ -1,4 +1,6 @@
 
+// 三角関数（Sine, Cosine）の近似法プログラム
+
 #include <stdio.h>
 #include <stdint.h>
 #include <limits.h>
@@ -365,6 +367,4 @@ int main(int argc, char* argv[])
 	testSine();
 	return 0;
 }
-
-
 
