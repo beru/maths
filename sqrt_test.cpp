@@ -114,23 +114,28 @@ void testFloat()
 }
 
 // 引数 s  : 負でない整数
+// 引数 iq : 引数sの固定小数点のQ値（小数部ビット数）、整数の場合は 2^32-1 まで、奇数の場合は 2^31-1 までの入力に対応
 // 引数 oq : 戻り値の固定小数点のQ値（小数部ビット数）
-// 戻り値  : 平方根の逆数 固定小数点形式
-uint32_t calc_recipro_sqrt_integer(uint32_t s, size_t* oq)
+// 戻り値  : 入力値の平方根の逆数 固定小数点形式
+uint32_t calc_recipro_sqrt_FixedPoint(uint32_t s, size_t iq, size_t* oq)
 {
 	if (s == 0) {
 		return 0;
 	}
-	size_t clz = __lzcnt(s);
+	size_t clz = __lzcnt(s) - (iq & 1);
 	size_t nBits = (32 - clz) & (~1);
-	s <<= clz;
-	size_t offset = 31 - (clz >> 1);
+	s <<= clz + (iq & 1);
+	size_t offset = 31 - (clz >> 1) + (iq >> 1) - iq;
 	uint32_t x = 1u << 31;
-	for (size_t i=0; i<4; ++i) {
+	{
+		uint32_t s_mul_x_mul_x_mul_x = ((uint64_t)s * x) >> (clz + nBits);
+		x += ((int32_t)(x - s_mul_x_mul_x_mul_x) >> 1);
+	}
+	for (size_t i=0; i<2; ++i) {
 		uint32_t s_mul_x = ((uint64_t)s * x) >> 31;								// (Q.clz * Q.31) >> 31 = Q.clz
 		uint32_t x_mul_x = ((uint64_t)x * x) >> 31;								// (Q.31 * Q.31) >> 31 = Q.31
-		uint64_t s_mul_x_mul_x_mul_x = ((uint64_t)s_mul_x * x_mul_x) >> (clz + nBits);	// (Q.clz * Q.31) >> (clz + nBits) = Q.(31 - nBits)
-		x = x + ((x - s_mul_x_mul_x_mul_x) >> 1);
+		uint32_t s_mul_x_mul_x_mul_x = ((uint64_t)s_mul_x * x_mul_x) >> (clz + nBits);	// (Q.clz * Q.31) >> (clz + nBits) = Q.(31 - nBits)
+		x += ((int32_t)(x - s_mul_x_mul_x_mul_x) >> 1);
 	}
 	*oq = 16 + offset - (clz & 1);
 	return x;
@@ -143,20 +148,21 @@ void testFixedPoint()
 
 	uint32_t begin = 1 << 0;
 	uint32_t end = begin + 64;
-	size_t q = 0;
+	size_t iq = 15;
+	size_t oq;
 	for (uint32_t i = begin; i < end; ++i) {
-		size_t q;
-		uint32_t x = calc_recipro_sqrt_integer(i, &q);
-		double square_root0 = sqrt((double)i);
-		double square_root1 = ((uint64_t)i * x) / (double)(1llu << q);
-		double square_root2 = 1.0 / (x / (double)(1llu << q));
-		printf("%u %u %.13f %.13f\n", i, x, square_root0, square_root2);
+		uint32_t x = calc_recipro_sqrt_FixedPoint(i, iq, &oq);
+		double fi = (double)i / (1llu << iq);
+		double square_root0 = sqrt(fi);
+		double oi = (double)x / (1llu << oq);
+		double square_root2 = 1.0 / oi;
+		printf("%f %f %f\n", fi, square_root0, square_root2);
 	}
 }
 
 int main(int argc, char* argv[])
 {
-	testFloat();
+//	testFloat();
 	testFixedPoint();
 	return 0;
 }
