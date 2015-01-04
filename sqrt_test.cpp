@@ -126,12 +126,8 @@ uint32_t calc_recipro_sqrt_FixedPoint(uint32_t s, size_t iq, size_t* oq)
 	size_t nBits = (32 - clz) & (~1);
 	s <<= clz + (iq & 1);
 	size_t offset = 31 - (clz >> 1) + (iq >> 1) - iq;
-	uint32_t x = 1u << 31;
-	{
-		uint32_t s_mul_x_mul_x_mul_x = ((uint64_t)s * x) >> (clz + nBits);
-		x += ((int32_t)(x - s_mul_x_mul_x_mul_x) >> 1);
-	}
-	for (size_t i=0; i<2; ++i) {
+	uint32_t x = (3u << 30) - (s >> (clz + nBits - 30));
+	for (size_t i=0; i<3;	++i) {
 		uint32_t s_mul_x = ((uint64_t)s * x) >> 31;								// (Q.clz * Q.31) >> 31 = Q.clz
 		uint32_t x_mul_x = ((uint64_t)x * x) >> 31;								// (Q.31 * Q.31) >> 31 = Q.31
 		uint32_t s_mul_x_mul_x_mul_x = ((uint64_t)s_mul_x * x_mul_x) >> (clz + nBits);	// (Q.clz * Q.31) >> (clz + nBits) = Q.(31 - nBits)
@@ -148,7 +144,7 @@ void testFixedPoint()
 
 	uint32_t begin = 1 << 0;
 	uint32_t end = begin + 64;
-	size_t iq = 15;
+	size_t iq = 0;
 	size_t oq;
 	for (uint32_t i = begin; i < end; ++i) {
 		uint32_t x = calc_recipro_sqrt_FixedPoint(i, iq, &oq);
